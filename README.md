@@ -1,1 +1,1 @@
-# Simple Raytracer in rust.
+Simple Raytracer in rust.
