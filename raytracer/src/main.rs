@@ -4,12 +4,13 @@
 // mod, pub use, use的区别？
 
 mod material;
+mod ray;
 mod scene;
 mod vec3;
-mod ray;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 use indicatif::ProgressBar;
+pub use ray::Ray;
 use rusttype::Font;
 use scene::example_scene;
 use std::sync::mpsc::channel;
@@ -81,8 +82,21 @@ fn main() {
         is_ci, n_jobs, n_workers
     );
 
-    let height = 512;
-    let width = 1024;
+    // Image
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 400;
+    let image_height = (image_width as f64 / aspect_ratio) as u32;
+
+    // Camera
+    let viewport_height = 2.0;
+    let viewport_width = aspect_ratio * viewport_height;
+    let focal_length = 1.0;
+
+    let origin = Color::new(0.0, 0.0, 0.0);
+    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+    let vertical = Vec3::new(0.0, viewport_height, 0.0);
+    let lower_left_corner =
+        origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0, 0.0, focal_length);
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
@@ -98,23 +112,22 @@ fn main() {
         let world_ptr = world.clone();
         pool.execute(move || {
             // here, we render some of the rows of image in one thread
-            let row_begin = height as usize * i / n_jobs;
-            let row_end = height as usize * (i + 1) / n_jobs;
+            let row_begin = image_height as usize * i / n_jobs;
+            let row_end = image_height as usize * (i + 1) / n_jobs;
             let render_height = row_end - row_begin;
-            let mut img: RgbImage = ImageBuffer::new(width, render_height as u32);
-            for x in 0..width {
+            let mut img: RgbImage = ImageBuffer::new(image_width, render_height as u32);
+            for x in 0..image_width {
                 // img_y is the row in partial rendered image
                 // y is real position in final image
                 for (img_y, y) in (row_begin..row_end).enumerate() {
                     let y = y as u32;
-                    let mut cur_color = Color::zero();
-                    let u: f64 = (x as f64) / (width - 1) as f64;
-                    let v: f64 = (y as f64) / (height - 1) as f64;
-                    cur_color += Color {
-                        x: u,
-                        y: v,
-                        z: 0.25,
-                    };
+                    let u: f64 = (x as f64) / (image_width - 1) as f64;
+                    let v: f64 = (y as f64) / (image_height - 1) as f64;
+                    let ray = Ray::new(
+                        origin,
+                        lower_left_corner + horizontal * u + vertical * v - origin,
+                    );
+                    let cur_color = ray_color(&ray);
                     write_color(cur_color, &mut img, x, img_y as u32);
                     // let pixel = img.get_pixel_mut(x, img_y as u32);
                     // let color = world_ptr.color(x, y);
@@ -127,12 +140,12 @@ fn main() {
         });
     }
 
-    let mut result: RgbImage = ImageBuffer::new(width, height);
+    let mut result: RgbImage = ImageBuffer::new(image_width, image_height);
 
     for (rows, data) in rx.iter().take(n_jobs) {
         // idx is the corrsponding row in partial-rendered image
         for (idx, row) in rows.enumerate() {
-            for col in 0..width {
+            for col in 0..image_width {
                 let row = row as u32;
                 let idx = idx as u32;
                 *result.get_pixel_mut(col, row) = *data.get_pixel(col, idx);
@@ -149,6 +162,33 @@ fn main() {
     render_text(&mut result, msg.as_str());
 
     result.save("output/test.png").unwrap();
+}
+
+fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> bool {
+    let oc = r.orig - center;
+    let a = r.dir.dot(r.dir);
+    let b = oc.dot(r.dir) * 2.0;
+    let c = oc.dot(oc) - radius * radius;
+    let discriminant = b * b - 4.0 * a * c;
+    discriminant > 0.0
+}
+
+fn ray_color(r: &Ray) -> Color {
+    if hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, r) {
+        return Color::new(1.0, 0.0, 0.0);
+    }
+    let unit_direction = r.dir.unit();
+    let t = 0.5 * (unit_direction.y + 1.0);
+    Color {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    } * (1.0 - t)
+        + Color {
+            x: 0.5,
+            y: 0.7,
+            z: 1.0,
+        } * t
 }
 
 fn within(min: f64, max: f64, value: f64) -> f64 {
