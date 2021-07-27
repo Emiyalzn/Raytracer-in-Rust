@@ -1,9 +1,12 @@
 #![allow(clippy::float_cmp)]
 #![feature(box_syntax)]
 
+// mod, pub use, use的区别？
+
 mod material;
 mod scene;
 mod vec3;
+mod ray;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 use indicatif::ProgressBar;
@@ -12,7 +15,7 @@ use scene::example_scene;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use threadpool::ThreadPool;
-pub use vec3::Vec3;
+pub use vec3::{Color, Point3, Vec3};
 
 const AUTHOR: &str = "Emiyalzn";
 
@@ -104,9 +107,18 @@ fn main() {
                 // y is real position in final image
                 for (img_y, y) in (row_begin..row_end).enumerate() {
                     let y = y as u32;
-                    let pixel = img.get_pixel_mut(x, img_y as u32);
-                    let color = world_ptr.color(x, y);
-                    *pixel = Rgb([color, color, color]);
+                    let mut cur_color = Color::zero();
+                    let u: f64 = (x as f64) / (width - 1) as f64;
+                    let v: f64 = (y as f64) / (height - 1) as f64;
+                    cur_color += Color {
+                        x: u,
+                        y: v,
+                        z: 0.25,
+                    };
+                    write_color(cur_color, &mut img, x, img_y as u32);
+                    // let pixel = img.get_pixel_mut(x, img_y as u32);
+                    // let color = world_ptr.color(x, y);
+                    // *pixel = Rgb([color, color, color]);
                 }
             }
             // send row range and rendered image to main thread
@@ -137,4 +149,26 @@ fn main() {
     render_text(&mut result, msg.as_str());
 
     result.save("output/test.png").unwrap();
+}
+
+fn within(min: f64, max: f64, value: f64) -> f64 {
+    if value > max {
+        return max;
+    }
+    if value < min {
+        return min;
+    }
+    value
+}
+
+fn write_color(color: Color, img: &mut RgbImage, x: u32, y: u32) {
+    let pixel = img.get_pixel_mut(x, y);
+    let colorx = color.x.sqrt();
+    let colory = color.y.sqrt();
+    let colorz = color.z.sqrt();
+    *pixel = image::Rgb([
+        (within(0.0, 0.999, colorx) * 256.0) as u8,
+        (within(0.0, 0.999, colory) * 256.0) as u8,
+        (within(0.0, 0.999, colorz) * 256.0) as u8,
+    ]);
 }

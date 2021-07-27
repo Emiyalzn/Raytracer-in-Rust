@@ -3,6 +3,7 @@
 
 use crate::Vec3;
 use crate::World;
+use rand::Rng;
 use raytracer_codegen::make_spheres_impl;
 
 // Call the procedural macro, which will become `make_spheres` function.
@@ -29,4 +30,12 @@ pub fn example_scene() -> World {
 
     hittable_list.clear();
     World { height: 512 }
+}
+
+fn random_double() -> f64 {
+    rand::thread_rng().gen()
+}
+
+fn random_double_in(min: f64, max: f64) -> f64 {
+    rand::thread_rng().gen_range(min, max)
 }
