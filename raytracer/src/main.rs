@@ -14,7 +14,7 @@ use std::sync::Arc;
 use threadpool::ThreadPool;
 pub use vec3::Vec3;
 
-const AUTHOR: &str = "Alex Chi";
+const AUTHOR: &str = "Emiyalzn";
 
 pub struct World {
     pub height: u32,
