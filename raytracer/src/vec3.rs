@@ -1,4 +1,5 @@
-use std::ops::{Add, AddAssign};
+use rand::Rng;
+use std::ops::{Add, AddAssign, Div, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Vec3 {
@@ -20,8 +21,74 @@ impl Vec3 {
         Self::new(0.0, 0.0, 0.0)
     }
 
+    pub fn elemul(self, other: Self) -> Self {
+        Self {
+            x: self.x * other.x,
+            y: self.y * other.y,
+            z: self.z * other.z,
+        }
+    }
+
+    pub fn dot(self, other: Self) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn cross(self, other: Self) -> Self {
+        Self {
+            x: self.y * other.z - other.y * self.z,
+            y: self.z * other.x - other.z * self.x,
+            z: self.x * other.y - other.x * self.y,
+        }
+    }
+
     pub fn squared_length(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    pub fn length(&self) -> f64 {
+        self.squared_length().sqrt()
+    }
+
+    pub fn unit(&self) -> Self {
+        if self.squared_length() == 0.0 {
+            panic!("Divide by zero!")
+        }
+        Self {
+            x: self.x / self.length(),
+            y: self.y / self.length(),
+            z: self.z / self.length(),
+        }
+    }
+
+    pub fn random_unit() -> Self {
+        Self {
+            x: rand::thread_rng().gen(),
+            y: rand::thread_rng().gen(),
+            z: rand::thread_rng().gen(),
+        }
+    }
+
+    pub fn random(min: f64, max: f64) -> Self {
+        Self {
+            x: rand::thread_rng().gen_range(min, max),
+            y: rand::thread_rng().gen_range(min, max),
+            z: rand::thread_rng().gen_range(min, max),
+        }
+    }
+}
+
+pub type Point3 = Vec3;
+pub type Color = Vec3;
+
+impl Index<usize> for Vec3 {
+    type Output = f64;
+    fn index(&self, idx: usize) -> &f64 {
+        match idx {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Out of range!"),
+        }
     }
 }
 
@@ -56,6 +123,114 @@ impl AddAssign for Vec3 {
             y: self.y + other.y,
             z: self.z + other.z,
         };
+    }
+}
+
+impl AddAssign<f64> for Vec3 {
+    fn add_assign(&mut self, other: f64) {
+        *self = Self {
+            x: self.x + other,
+            y: self.y + other,
+            z: self.z + other,
+        };
+    }
+}
+
+impl Sub for Vec3 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
+    }
+}
+
+impl Sub<f64> for Vec3 {
+    type Output = Self;
+
+    fn sub(self, other: f64) -> Self {
+        Self {
+            x: self.x - other,
+            y: self.y - other,
+            z: self.z - other,
+        }
+    }
+}
+
+impl SubAssign for Vec3 {
+    fn sub_assign(&mut self, other: Self) {
+        *self = Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        };
+    }
+}
+
+impl SubAssign<f64> for Vec3 {
+    fn sub_assign(&mut self, other: f64) {
+        *self = Self {
+            x: self.x - other,
+            y: self.y - other,
+            z: self.z - other,
+        };
+    }
+}
+
+impl Mul for Vec3 {
+    type Output = f64;
+
+    fn mul(self, other: Self) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+}
+
+impl Mul<f64> for Vec3 {
+    type Output = Self;
+
+    fn mul(self, other: f64) -> Self {
+        Self {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        }
+    }
+}
+
+impl MulAssign<f64> for Vec3 {
+    fn mul_assign(&mut self, other: f64) {
+        *self = Self {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        };
+    }
+}
+
+impl Div<f64> for Vec3 {
+    type Output = Self;
+
+    fn div(self, other: f64) -> Self {
+        Self {
+            x: self.x / other,
+            y: self.y / other,
+            z: self.z / other,
+        }
+    }
+}
+
+impl Neg for Vec3 {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
 
