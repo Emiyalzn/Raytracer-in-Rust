@@ -60,7 +60,7 @@ fn render_text(image: &mut RgbImage, msg: &str) {
 
     imageproc::drawing::draw_text_mut(
         image,
-        Rgb([255, 255, 255]),
+        Rgb([0, 0, 0]),
         10,
         10,
         rusttype::Scale::uniform(24.0),
@@ -164,18 +164,23 @@ fn main() {
     result.save("output/test.png").unwrap();
 }
 
-fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> bool {
+fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> f64 {
     let oc = r.orig - center;
-    let a = r.dir.dot(r.dir);
-    let b = oc.dot(r.dir) * 2.0;
-    let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    discriminant > 0.0
+    let a = r.dir.squared_length();
+    let half_b = oc.dot(r.dir);
+    let c = oc.squared_length() - radius * radius;
+    let discriminant = half_b * half_b - a * c;
+    if (discriminant < 0.0) {
+        return -1.0;
+    }
+    (-half_b - discriminant.sqrt()) / a
 }
 
 fn ray_color(r: &Ray) -> Color {
-    if hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, r) {
-        return Color::new(1.0, 0.0, 0.0);
+    let t = hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, r);
+    if (t > 0.0) {
+        let N = (r.at(t) - Vec3::new(0.0, 0.0, -1.0)).unit();
+        return Color::new(N.x + 1.0, N.y + 1.0, N.z + 1.0) * 0.5;
     }
     let unit_direction = r.dir.unit();
     let t = 0.5 * (unit_direction.y + 1.0);
