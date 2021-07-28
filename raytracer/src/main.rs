@@ -4,15 +4,18 @@
 // Arc<dyn>含义?
 // feature_boxSyntax? Box?
 
+mod camera;
 mod material;
 mod object;
 mod ray;
 mod scene;
 mod vec3;
 
-use image::{ImageBuffer, Rgb, RgbImage};
+pub use camera::Camera;
+use image::{imageops::FilterType::CatmullRom, ImageBuffer, Rgb, RgbImage};
 use indicatif::ProgressBar;
 pub use object::*;
+use rand::Rng;
 pub use ray::Ray;
 use rusttype::Font;
 use std::sync::mpsc::channel;
@@ -88,17 +91,10 @@ fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
+    let samples_per_pixel = 100;
 
     // Camera
-    let viewport_height = 2.0;
-    let viewport_width = aspect_ratio * viewport_height;
-    let focal_length = 1.0;
-
-    let origin = Color::new(0.0, 0.0, 0.0);
-    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-    let vertical = Vec3::new(0.0, viewport_height, 0.0);
-    let lower_left_corner =
-        origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0, 0.0, focal_length);
+    let cam = Camera::new();
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
@@ -126,13 +122,17 @@ fn main() {
                 // y is real position in final image
                 for (img_y, y) in (row_begin..row_end).enumerate() {
                     let y = y as u32;
-                    let u: f64 = (x as f64) / (image_width - 1) as f64;
-                    let v: f64 = (y as f64) / (image_height - 1) as f64;
-                    let ray = Ray::new(
-                        origin,
-                        lower_left_corner + horizontal * u + vertical * v - origin,
-                    );
-                    let cur_color = ray_color(&ray, &*world_ptr);
+                    let mut cur_color = Color::zero();
+                    let mut rng = rand::thread_rng();
+                    for s in 0..samples_per_pixel {
+                        let randa: f64 = rng.gen();
+                        let randb: f64 = rng.gen();
+                        let u: f64 = (x as f64 + randa) / (image_width - 1) as f64;
+                        let v: f64 = (y as f64 + randb) / (image_height - 1) as f64;
+                        let ray = cam.get_ray(u, v);
+                        cur_color += ray_color(&ray, &*world_ptr);
+                    }
+                    cur_color *= 1.0 / (samples_per_pixel as f64);
                     write_color(cur_color, &mut img, x, img_y as u32);
                 }
             }
@@ -163,7 +163,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/test.png").unwrap();
+    result.save("output/antialiasing.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object) -> Color {
