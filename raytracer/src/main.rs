@@ -96,7 +96,21 @@ fn main() {
     let max_depth = 50;
 
     // Camera
-    let cam = Camera::new();
+    let lookfrom = Point3::new(3.0, 3.0, 2.0);
+    let lookat = Point3::new(0.0, 0.0, -1.0);
+    let vup = Vec3::new(0.0, 1.0, 0.0);
+    let dist_to_focus = (lookfrom - lookat).length();
+    let aperture = 2.0;
+
+    let cam = Camera::new(
+        20.0,
+        aspect_ratio,
+        lookfrom,
+        lookat,
+        vup,
+        aperture,
+        dist_to_focus,
+    );
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
@@ -107,13 +121,19 @@ fn main() {
     // use Arc to pass one instance of World to multiple threads
     let mut world_scene = HittableList::new();
     let material_ground = Arc::new(Lambertian::new(&Color::new(0.8, 0.8, 0.0)));
-    let material_center = Arc::new(Lambertian::new(&Color::new(0.7, 0.3, 0.3)));
+    let material_center = Arc::new(Lambertian::new(&Color::new(0.1, 0.2, 0.5)));
     let material_left = Arc::new(Dielectric::new(1.5));
-    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2), 1.0));
+    let _material_left = Arc::clone(&material_left);
+    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2), 0.0));
     world_scene.push(Arc::new(Sphere::new(
         Point3::new(-1.0, 0.0, -1.0),
         0.5,
         material_left,
+    )));
+    world_scene.push(Arc::new(Sphere::new(
+        Point3::new(-1.0, 0.0, -1.0),
+        -0.45,
+        _material_left,
     )));
     world_scene.push(Arc::new(Sphere::new(
         Point3::new(1.0, 0.0, -1.0),
@@ -187,7 +207,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Dielectric.png").unwrap();
+    result.save("output/Defocus Blur.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {

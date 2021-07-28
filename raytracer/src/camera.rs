@@ -1,4 +1,5 @@
 pub use crate::ray::Ray;
+use crate::vec3::random_in_unit_disk;
 pub use crate::vec3::Point3;
 pub use crate::vec3::Vec3;
 
@@ -12,33 +13,52 @@ pub struct Camera {
     pub lower_left_corner: Point3,
     pub horizontal: Vec3,
     pub vertical: Vec3,
+    pub u: Vec3,
+    pub v: Vec3,
+    pub w: Vec3,
+    pub lens_radius: f64,
 }
 
 impl Camera {
-    pub fn new() -> Self {
-        let aspect_ratio = 16.0 / 9.0;
-        let viewport_height = 2.0;
+    pub fn new(
+        vfov: f64,
+        aspect_ratio: f64,
+        look_from: Point3,
+        look_at: Point3,
+        vup: Vec3,
+        aperture: f64,
+        focus_dist: f64,
+    ) -> Self {
+        let theta = degrees_to_radians(vfov);
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h;
         let viewport_width = aspect_ratio * viewport_height;
-        let focal_length = 1.0;
-        let origin = Point3::new(0.0, 0.0, 0.0);
-        let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-        let vertical = Vec3::new(0.0, viewport_height, 0.0);
+
+        let _w = (look_from - look_at).unit();
+        let _u = Vec3::cross(vup, _w).unit();
+        let _v = Vec3::cross(_w, _u);
 
         Self {
-            origin: Point3::new(0.0, 0.0, 0.0),
-            horizontal: Vec3::new(viewport_width, 0.0, 0.0),
-            vertical: Vec3::new(0.0, viewport_height, 0.0),
-            lower_left_corner: origin
-                - horizontal / 2.0
-                - vertical / 2.0
-                - Vec3::new(0.0, 0.0, focal_length),
+            origin: look_from,
+            horizontal: _u * viewport_width * focus_dist,
+            vertical: _v * viewport_height * focus_dist,
+            lower_left_corner: look_from
+                - _u * viewport_width / 2.0 * focus_dist
+                - _v * viewport_height / 2.0 * focus_dist
+                - _w * focus_dist,
+            u: _u,
+            v: _v,
+            w: _w,
+            lens_radius: aperture / 2.0,
         }
     }
 
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, s: f64, t: f64) -> Ray {
+        let rd = crate::vec3::random_in_unit_disk() * self.lens_radius;
+        let offset = self.u * rd.x + self.v * rd.y;
         Ray::new(
-            self.origin,
-            self.lower_left_corner + self.horizontal * u + self.vertical * v - self.origin,
+            self.origin + offset,
+            self.lower_left_corner + self.horizontal * s + self.vertical * t - self.origin - offset,
         )
     }
 }
