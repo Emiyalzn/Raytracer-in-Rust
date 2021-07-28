@@ -106,8 +106,30 @@ fn main() {
 
     // use Arc to pass one instance of World to multiple threads
     let mut world_scene = HittableList::new();
-    world_scene.push(Arc::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
-    world_scene.push(Arc::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
+    let material_ground = Arc::new(Lambertian::new(&Color::new(0.8, 0.8, 0.0)));
+    let material_center = Arc::new(Lambertian::new(&Color::new(0.7, 0.3, 0.3)));
+    let material_left = Arc::new(Metal::new(&Color::new(0.8, 0.8, 0.8)));
+    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2)));
+    world_scene.push(Arc::new(Sphere::new(
+        Point3::new(-1.0, 0.0, -1.0),
+        0.5,
+        material_left,
+    )));
+    world_scene.push(Arc::new(Sphere::new(
+        Point3::new(1.0, 0.0, -1.0),
+        0.5,
+        material_right,
+    )));
+    world_scene.push(Arc::new(Sphere::new(
+        Point3::new(0.0, 0.0, -1.0),
+        0.5,
+        material_center,
+    )));
+    world_scene.push(Arc::new(Sphere::new(
+        Point3::new(0.0, -100.5, -1.0),
+        100.0,
+        material_ground,
+    )));
     let world = Arc::new(world_scene);
 
     for i in 0..n_jobs {
@@ -165,7 +187,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Lambertian.png").unwrap();
+    result.save("output/Metal.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
@@ -176,8 +198,13 @@ fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
 
     match rec {
         Some(cur_rec) => {
-            let target = cur_rec.p + cur_rec.normal + random_unit_vector();
-            return ray_color(&Ray::new(cur_rec.p, target - cur_rec.p), world, depth - 1) * 0.5;
+            let cur_data = cur_rec.mat_ptr.scatter(r, &cur_rec);
+            match cur_data {
+                Some((attenuation, scattered)) => {
+                    Vec3::elemul(attenuation, ray_color(&scattered, world, depth - 1))
+                }
+                None => Color::new(0.0, 0.0, 0.0),
+            }
         }
         None => {
             let u = r.dir.unit();

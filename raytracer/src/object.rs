@@ -11,12 +11,13 @@ pub trait Object: Send + Sync {
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
+    pub mat_ptr: Arc<dyn Material>,
     pub t: f64,
     pub front_face: bool,
 }
 
 impl HitRecord {
-    pub fn new(point: Point3, n: Vec3, tin: f64) -> Self {
+    pub fn new(point: Point3, n: Vec3, tin: f64, m: Arc<dyn Material>) -> Self {
         Self {
             p: Point3 {
                 x: point.x,
@@ -28,6 +29,7 @@ impl HitRecord {
                 y: n.y,
                 z: n.z,
             },
+            mat_ptr: m,
             t: tin,
             front_face: true,
         }
@@ -47,10 +49,11 @@ impl HitRecord {
 pub struct Sphere {
     pub center: Point3,
     pub radius: f64,
+    pub mat_ptr: Arc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(c: Point3, r: f64) -> Self {
+    pub fn new(c: Point3, r: f64, m: Arc<dyn Material>) -> Self {
         Self {
             center: Point3 {
                 x: c.x,
@@ -58,6 +61,7 @@ impl Sphere {
                 z: c.z,
             },
             radius: r,
+            mat_ptr: m,
         }
     }
 }
@@ -76,7 +80,7 @@ impl Object for Sphere {
             if tmp < t_max && tmp > t_min {
                 let n = (r.at(tmp) - self.center).unit();
                 let outward_normal = (r.at(tmp) - self.center) / self.radius;
-                let mut rec = HitRecord::new(r.at(tmp), n, tmp);
+                let mut rec = HitRecord::new(r.at(tmp), n, tmp, self.mat_ptr.clone());
                 rec.set_face_normal(r, &outward_normal);
                 return Some(rec);
             }
@@ -84,7 +88,7 @@ impl Object for Sphere {
             if tmp < t_max && tmp > t_min {
                 let n = (r.at(tmp) - self.center).unit();
                 let outward_normal = (r.at(tmp) - self.center) / self.radius;
-                let mut rec = HitRecord::new(r.at(tmp), n, tmp);
+                let mut rec = HitRecord::new(r.at(tmp), n, tmp, self.mat_ptr.clone());
                 rec.set_face_normal(r, &outward_normal);
                 return Some(rec);
             }
@@ -123,5 +127,66 @@ impl Object for HittableList {
             }
         }
         cur_rec
+    }
+}
+
+pub trait Material: Send + Sync {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
+}
+
+pub struct Lambertian {
+    pub albedo: Color,
+}
+
+impl Lambertian {
+    pub fn new(a: &Color) -> Self {
+        Self {
+            albedo: Color {
+                x: a.x,
+                y: a.y,
+                z: a.z,
+            },
+        }
+    }
+}
+
+impl Material for Lambertian {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let mut scatter_direction = rec.normal + crate::vec3::random_unit_vector();
+        if scatter_direction.near_zero() {
+            scatter_direction = rec.normal;
+        }
+        let scattered = Ray::new(rec.p, scatter_direction);
+        let attenuation = self.albedo;
+        Some((attenuation, scattered))
+    }
+}
+
+pub struct Metal {
+    pub albedo: Color,
+}
+
+impl Metal {
+    pub fn new(a: &Color) -> Self {
+        Self {
+            albedo: Color {
+                x: a.x,
+                y: a.y,
+                z: a.z,
+            },
+        }
+    }
+}
+
+impl Material for Metal {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let reflected = crate::vec3::reflect(&r_in.dir.unit(), &rec.normal);
+        let scattered = Ray::new(rec.p, reflected);
+        let attenuation = self.albedo;
+        if scattered.dir * rec.normal > 0.0 {
+            Some((attenuation, scattered))
+        } else {
+            None
+        }
     }
 }

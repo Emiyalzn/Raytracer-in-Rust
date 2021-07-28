@@ -75,6 +75,11 @@ impl Vec3 {
             z: rand::thread_rng().gen_range(min, max),
         }
     }
+
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        return (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s);
+    }
 }
 
 pub type Point3 = Vec3;
@@ -250,6 +255,10 @@ pub fn random_unit_vector() -> Vec3 {
     let z: f64 = rng.gen_range(-1.0, 1.0);
     let r: f64 = (1.0 - z * z).sqrt();
     Vec3::new(r * a.cos(), r * a.sin(), z)
+}
+
+pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+    *v - *n * (*v * *n) * 2.0
 }
 
 #[cfg(test)]
