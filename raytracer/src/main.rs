@@ -21,6 +21,7 @@ use rusttype::Font;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use threadpool::ThreadPool;
+use vec3::{random_in_unit_sphere, random_unit_vector};
 pub use vec3::{Color, Point3, Vec3};
 
 const AUTHOR: &str = "Emiyalzn";
@@ -92,6 +93,7 @@ fn main() {
     let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
     let samples_per_pixel = 100;
+    let max_depth = 50;
 
     // Camera
     let cam = Camera::new();
@@ -130,7 +132,7 @@ fn main() {
                         let u: f64 = (x as f64 + randa) / (image_width - 1) as f64;
                         let v: f64 = (y as f64 + randb) / (image_height - 1) as f64;
                         let ray = cam.get_ray(u, v);
-                        cur_color += ray_color(&ray, &*world_ptr);
+                        cur_color += ray_color(&ray, &*world_ptr, max_depth);
                     }
                     cur_color *= 1.0 / (samples_per_pixel as f64);
                     write_color(cur_color, &mut img, x, img_y as u32);
@@ -163,14 +165,20 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/antialiasing.png").unwrap();
+    result.save("output/Lambertian.png").unwrap();
 }
 
-fn ray_color(r: &Ray, world: &dyn Object) -> Color {
+fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
+    if depth <= 0 {
+        return Color::new(0.0, 0.0, 0.0);
+    }
     let rec = world.hit(r, 0.001, std::f64::INFINITY);
 
     match rec {
-        Some(cur_rec) => (cur_rec.normal + Color::ones()) * 0.5,
+        Some(cur_rec) => {
+            let target = cur_rec.p + cur_rec.normal + random_unit_vector();
+            return ray_color(&Ray::new(cur_rec.p, target - cur_rec.p), world, depth - 1) * 0.5;
+        }
         None => {
             let u = r.dir.unit();
             let t = 0.5 * (u.y + 1.0);
