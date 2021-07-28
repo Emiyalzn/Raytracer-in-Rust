@@ -1,4 +1,5 @@
 pub use crate::ray::Ray;
+use crate::vec3::random_in_unit_sphere;
 pub use crate::vec3::{Color, Point3, Vec3};
 use rand::Rng;
 pub use std::{sync::Arc, vec};
@@ -164,16 +165,18 @@ impl Material for Lambertian {
 
 pub struct Metal {
     pub albedo: Color,
+    pub fuzz: f64,
 }
 
 impl Metal {
-    pub fn new(a: &Color) -> Self {
+    pub fn new(a: &Color, f: f64) -> Self {
         Self {
             albedo: Color {
                 x: a.x,
                 y: a.y,
                 z: a.z,
             },
+            fuzz: if f < 1.0 { f } else { 1.0 },
         }
     }
 }
@@ -181,12 +184,55 @@ impl Metal {
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         let reflected = crate::vec3::reflect(&r_in.dir.unit(), &rec.normal);
-        let scattered = Ray::new(rec.p, reflected);
+        let scattered = Ray::new(rec.p, reflected + random_in_unit_sphere() * self.fuzz);
         let attenuation = self.albedo;
         if scattered.dir * rec.normal > 0.0 {
             Some((attenuation, scattered))
         } else {
             None
         }
+    }
+}
+
+pub struct Dielectric {
+    ir: f64,
+}
+
+impl Dielectric {
+    pub fn new(ri: f64) -> Self {
+        Self { ir: ri }
+    }
+}
+
+pub fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
+    let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let attenuation = Color::ones();
+        let refraction_ratio = if rec.front_face {
+            1.0 / self.ir
+        } else {
+            self.ir
+        };
+        let unit_direction = r_in.dir.unit();
+        let cos = -unit_direction * rec.normal;
+        let cos_theta = if cos < 1.0 { cos } else { 1.0 };
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract = refraction_ratio * sin_theta > 1.0;
+        let mut direction = Vec3::zero();
+
+        if cannot_refract || reflectance(cos_theta, refraction_ratio) > rand::thread_rng().gen() {
+            direction = crate::vec3::reflect(&unit_direction, &rec.normal);
+        } else {
+            direction = crate::vec3::refract(&unit_direction, &rec.normal, refraction_ratio);
+        }
+
+        let scattered = Ray::new(rec.p, direction);
+        Some((attenuation, scattered))
     }
 }

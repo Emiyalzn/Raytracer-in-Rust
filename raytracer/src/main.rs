@@ -108,8 +108,8 @@ fn main() {
     let mut world_scene = HittableList::new();
     let material_ground = Arc::new(Lambertian::new(&Color::new(0.8, 0.8, 0.0)));
     let material_center = Arc::new(Lambertian::new(&Color::new(0.7, 0.3, 0.3)));
-    let material_left = Arc::new(Metal::new(&Color::new(0.8, 0.8, 0.8)));
-    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2)));
+    let material_left = Arc::new(Dielectric::new(1.5));
+    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2), 1.0));
     world_scene.push(Arc::new(Sphere::new(
         Point3::new(-1.0, 0.0, -1.0),
         0.5,
@@ -187,7 +187,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Metal.png").unwrap();
+    result.save("output/Dielectric.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
