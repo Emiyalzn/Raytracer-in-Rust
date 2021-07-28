@@ -89,18 +89,18 @@ fn main() {
     );
 
     // Image
-    let aspect_ratio = 16.0 / 9.0;
-    let image_width = 400;
+    let aspect_ratio = 3.0 / 2.0;
+    let image_width = 1200;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // Camera
-    let lookfrom = Point3::new(3.0, 3.0, 2.0);
-    let lookat = Point3::new(0.0, 0.0, -1.0);
+    let lookfrom = Point3::new(13.0, 2.0, 3.0);
+    let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = Vec3::new(0.0, 1.0, 0.0);
-    let dist_to_focus = (lookfrom - lookat).length();
-    let aperture = 2.0;
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
 
     let cam = Camera::new(
         20.0,
@@ -119,37 +119,7 @@ fn main() {
     let bar = ProgressBar::new(n_jobs as u64);
 
     // use Arc to pass one instance of World to multiple threads
-    let mut world_scene = HittableList::new();
-    let material_ground = Arc::new(Lambertian::new(&Color::new(0.8, 0.8, 0.0)));
-    let material_center = Arc::new(Lambertian::new(&Color::new(0.1, 0.2, 0.5)));
-    let material_left = Arc::new(Dielectric::new(1.5));
-    let _material_left = Arc::clone(&material_left);
-    let material_right = Arc::new(Metal::new(&Color::new(0.8, 0.6, 0.2), 0.0));
-    world_scene.push(Arc::new(Sphere::new(
-        Point3::new(-1.0, 0.0, -1.0),
-        0.5,
-        material_left,
-    )));
-    world_scene.push(Arc::new(Sphere::new(
-        Point3::new(-1.0, 0.0, -1.0),
-        -0.45,
-        _material_left,
-    )));
-    world_scene.push(Arc::new(Sphere::new(
-        Point3::new(1.0, 0.0, -1.0),
-        0.5,
-        material_right,
-    )));
-    world_scene.push(Arc::new(Sphere::new(
-        Point3::new(0.0, 0.0, -1.0),
-        0.5,
-        material_center,
-    )));
-    world_scene.push(Arc::new(Sphere::new(
-        Point3::new(0.0, -100.5, -1.0),
-        100.0,
-        material_ground,
-    )));
+    let world_scene = scene::random_scene();    
     let world = Arc::new(world_scene);
 
     for i in 0..n_jobs {
