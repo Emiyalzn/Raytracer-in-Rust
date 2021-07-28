@@ -1,18 +1,20 @@
 #![allow(clippy::float_cmp)]
-#![feature(box_syntax)]
 
 // mod, pub use, use的区别？
+// Arc<dyn>含义?
+// feature_boxSyntax? Box?
 
 mod material;
+mod object;
 mod ray;
 mod scene;
 mod vec3;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 use indicatif::ProgressBar;
+pub use object::*;
 pub use ray::Ray;
 use rusttype::Font;
-use scene::example_scene;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use threadpool::ThreadPool;
@@ -105,7 +107,10 @@ fn main() {
     let bar = ProgressBar::new(n_jobs as u64);
 
     // use Arc to pass one instance of World to multiple threads
-    let world = Arc::new(example_scene());
+    let mut world_scene = HittableList::new();
+    world_scene.push(Arc::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
+    world_scene.push(Arc::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
+    let world = Arc::new(world_scene);
 
     for i in 0..n_jobs {
         let tx = tx.clone();
@@ -127,11 +132,8 @@ fn main() {
                         origin,
                         lower_left_corner + horizontal * u + vertical * v - origin,
                     );
-                    let cur_color = ray_color(&ray);
+                    let cur_color = ray_color(&ray, &*world_ptr);
                     write_color(cur_color, &mut img, x, img_y as u32);
-                    // let pixel = img.get_pixel_mut(x, img_y as u32);
-                    // let color = world_ptr.color(x, y);
-                    // *pixel = Rgb([color, color, color]);
                 }
             }
             // send row range and rendered image to main thread
@@ -148,7 +150,7 @@ fn main() {
             for col in 0..image_width {
                 let row = row as u32;
                 let idx = idx as u32;
-                *result.get_pixel_mut(col, row) = *data.get_pixel(col, idx);
+                *result.get_pixel_mut(col, image_height - row - 1) = *data.get_pixel(col, idx);
             }
         }
         bar.inc(1);
@@ -164,36 +166,17 @@ fn main() {
     result.save("output/test.png").unwrap();
 }
 
-fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> f64 {
-    let oc = r.orig - center;
-    let a = r.dir.squared_length();
-    let half_b = oc.dot(r.dir);
-    let c = oc.squared_length() - radius * radius;
-    let discriminant = half_b * half_b - a * c;
-    if (discriminant < 0.0) {
-        return -1.0;
-    }
-    (-half_b - discriminant.sqrt()) / a
-}
+fn ray_color(r: &Ray, world: &dyn Object) -> Color {
+    let rec = world.hit(r, 0.001, std::f64::INFINITY);
 
-fn ray_color(r: &Ray) -> Color {
-    let t = hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, r);
-    if (t > 0.0) {
-        let N = (r.at(t) - Vec3::new(0.0, 0.0, -1.0)).unit();
-        return Color::new(N.x + 1.0, N.y + 1.0, N.z + 1.0) * 0.5;
+    match rec {
+        Some(cur_rec) => (cur_rec.normal + Color::ones()) * 0.5,
+        None => {
+            let u = r.dir.unit();
+            let t = 0.5 * (u.y + 1.0);
+            Color::ones() * (1.0 - t) + Color::new(0.5, 0.7, 1.0) * t
+        }
     }
-    let unit_direction = r.dir.unit();
-    let t = 0.5 * (unit_direction.y + 1.0);
-    Color {
-        x: 1.0,
-        y: 1.0,
-        z: 1.0,
-    } * (1.0 - t)
-        + Color {
-            x: 0.5,
-            y: 0.7,
-            z: 1.0,
-        } * t
 }
 
 fn within(min: f64, max: f64, value: f64) -> f64 {
