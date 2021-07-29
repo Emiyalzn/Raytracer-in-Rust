@@ -4,6 +4,7 @@
 // Arc<dyn>含义?
 // feature_boxSyntax? Box?
 
+pub mod aabb;
 mod camera;
 mod object;
 mod ray;

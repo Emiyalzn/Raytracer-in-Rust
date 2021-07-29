@@ -1,5 +1,5 @@
-pub use crate::ray::Ray;
 pub use crate::aabb::*;
+pub use crate::ray::Ray;
 use crate::vec3::random_in_unit_sphere;
 pub use crate::vec3::{Color, Point3, Vec3};
 use rand::Rng;
