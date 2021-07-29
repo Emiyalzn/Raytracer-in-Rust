@@ -5,7 +5,6 @@
 // feature_boxSyntax? Box?
 
 mod camera;
-mod material;
 mod object;
 mod ray;
 mod scene;
