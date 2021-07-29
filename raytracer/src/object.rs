@@ -4,6 +4,7 @@ pub use crate::vec3::{Color, Point3, Vec3};
 use rand::Rng;
 pub use std::{sync::Arc, vec};
 
+// trait的定义和使用方式？
 pub trait Object: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }

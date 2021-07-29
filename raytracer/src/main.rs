@@ -119,7 +119,7 @@ fn main() {
     let bar = ProgressBar::new(n_jobs as u64);
 
     // use Arc to pass one instance of World to multiple threads
-    let world_scene = scene::random_scene();    
+    let world_scene = scene::random_scene();
     let world = Arc::new(world_scene);
 
     for i in 0..n_jobs {
@@ -177,7 +177,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Defocus Blur.png").unwrap();
+    result.save("output/FinalScene.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
