@@ -1,12 +1,14 @@
 pub use crate::ray::Ray;
-use crate::vec3::random_in_unit_sphere;
+pub use crate::aabb::*;
 pub use crate::vec3::{Color, Point3, Vec3};
-use rand::Rng;
 pub use std::{sync::Arc, vec};
+use crate::vec3::random_in_unit_sphere;
+use rand::Rng;
 
 // trait的定义和使用方式？
 pub trait Object: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB>;
 }
 
 #[derive(Clone)]
@@ -97,6 +99,14 @@ impl Object for Sphere {
         }
         Option::None
     }
+
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+        let output_box = AABB::new(
+            self.center - Vec3::ones() * self.radius,
+            self.center + Vec3::ones() * self.radius,
+        );
+        Some(output_box)
+    }
 }
 
 #[derive(Clone)]
@@ -129,6 +139,33 @@ impl Object for HittableList {
             }
         }
         cur_rec
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        if self.objects.is_empty() {
+            return None;
+        }
+
+        let mut output_box = AABB::new(Point3::zero(), Point3::zero());
+        let mut first_box = true;
+
+        for object in &self.objects {
+            let res = object.bounding_box(t0, t1);
+            match res {
+                Some(tmp_box) => {
+                    output_box = if first_box {
+                        tmp_box
+                    } else {
+                        surrounding_box(output_box, tmp_box)
+                    };
+                    first_box = false;
+                }
+                None => {
+                    return None;
+                }
+            }
+        }
+        Some(output_box)
     }
 }
 

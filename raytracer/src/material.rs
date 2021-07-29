@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(clippy::boxed_local)]
 // You SHOULD remove above line in your code.
 
 // This file shows necessary examples of how to complete Track 4 and 5.
