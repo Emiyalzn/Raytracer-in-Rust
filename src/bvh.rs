@@ -11,21 +11,17 @@ pub struct BvhNode {
 
 impl BvhNode {
     pub fn new_boxed(list: HittableList, t0: f64, t1: f64) -> Arc<dyn Object> {
-        BvhNode::init(list.obejcts, t0, t1)
+        BvhNode::init(list.objects, t0, t1)
     }
 
-    pub fn init(
-        mut objects: Vec<Arc<dyn Object>>,
-        t0: f64,
-        t1: f64,
-    ) -> Arc<dyn Object> {
-        let axis = rand::thread_rng().gen_range(0,3);
+    pub fn init(mut objects: Vec<Arc<dyn Object>>, t0: f64, t1: f64) -> Arc<dyn Object> {
+        let axis = rand::thread_rng().gen_range(0, 3);
         match objects.len() {
             0 => panic!("None Objects!"),
             1 => objects.remove(0),
             _ => {
                 objects.sort_by(|a, b| {
-                    a.bounding_box(t0,t1).unwrap().min_p[axis]
+                    a.bounding_box(t0, t1).unwrap().min_p[axis]
                         .partial_cmp(&b.bounding_box(t0, t1).unwrap().min_p[axis])
                         .unwrap()
                 });
@@ -62,7 +58,7 @@ impl Object for BvhNode {
                             Some(hit_right)
                         }
                     }
-                    (Some(hit_left),None) => Some(hit_left),
+                    (Some(hit_left), None) => Some(hit_left),
                     (None, Some(hit_right)) => Some(hit_right),
                     (None, None) => None,
                 }
@@ -75,4 +71,3 @@ impl Object for BvhNode {
         Some(self.cur_box)
     }
 }
-

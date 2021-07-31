@@ -1,3 +1,4 @@
+use crate::bvh::*;
 use crate::camera::*;
 use crate::object::*;
 use crate::vec3::*;
@@ -15,13 +16,13 @@ pub fn init_scene(index: u32) -> (Arc<dyn Object>, Camera) {
     match index {
         1 => {
             let world_scene = two_spheres();
-            let world = Arc::new(world_scene);
+            let world = BvhNode::new_boxed(world_scene, 0.0, 0.0001);
 
-            let look_from = Point3::new(13.0,2.0,3.0);
-            let look_at = Point3::new(0.0,0.0,0.0);
-            let vup = Vec3::new(0.0,1.0,0.0);
+            let look_from = Point3::new(13.0, 2.0, 3.0);
+            let look_at = Point3::new(0.0, 0.0, 0.0);
+            let vup = Vec3::new(0.0, 1.0, 0.0);
             let vfov = 20.0;
-            let aspect_ratio = 3.0/2.0;
+            let aspect_ratio = 3.0 / 2.0;
             let dist_to_focus = 10.0;
             let aperture = 0.0;
             let cam = Camera::new(
@@ -38,13 +39,13 @@ pub fn init_scene(index: u32) -> (Arc<dyn Object>, Camera) {
         }
         2 => {
             let world_scene = random_scene();
-            let world = Arc::new(world_scene);
+            let world = BvhNode::new_boxed(world_scene, 0.0, 0.0001);
 
-            let look_from = Point3::new(13.0,2.0,3.0);
-            let look_at = Point3::new(0.0,0.0,0.0);
-            let vup = Vec3::new(0.0,1.0,0.0);
+            let look_from = Point3::new(13.0, 2.0, 3.0);
+            let look_at = Point3::new(0.0, 0.0, 0.0);
+            let vup = Vec3::new(0.0, 1.0, 0.0);
             let vfov = 20.0;
-            let aspect_ratio = 3.0/2.0;
+            let aspect_ratio = 3.0 / 2.0;
             let dist_to_focus = 10.0;
             let aperture = 0.1;
             let cam = Camera::new(

@@ -5,6 +5,7 @@
 // feature_boxSyntax? Box?
 
 pub mod aabb;
+pub mod bvh;
 mod camera;
 mod object;
 mod ray;
@@ -98,7 +99,7 @@ fn main() {
     let samples_per_pixel = 500;
     let max_depth = 50;
 
-    let (world, cam) = init_scene(2);
+    let (world, cam) = init_scene(1);
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
