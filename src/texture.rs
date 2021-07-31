@@ -1,4 +1,6 @@
 use crate::vec3::*;
+pub use image::*;
+pub use std::path::*;
 use std::sync::Arc;
 
 pub trait Texture: Send + Sync {
@@ -65,5 +67,60 @@ impl Texture for CheckerTexture {
         } else {
             self.even.value(u, v, p)
         }
+    }
+}
+
+pub struct ImageTexture {
+    pub data: ImageBuffer<image::Rgb<u8>, std::vec::Vec<u8>>,
+}
+
+fn clamp(x: f64, min: f64, max: f64) -> f64 {
+    if x < min {
+        return min;
+    } else if x > max {
+        return max;
+    } else {
+        return x;
+    }
+}
+
+impl ImageTexture {
+    pub fn new_by_pathstr(dir: &str) -> Self {
+        return Self {
+            data: image::open(&Path::new(dir)).unwrap().to_rgb(),
+        };
+    }
+
+    pub fn width(&self) -> u32 {
+        return self.data.width();
+    }
+
+    pub fn height(&self) -> u32 {
+        return self.data.height();
+    }
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+        let _u = clamp(u, 0.0, 1.0);
+        let _v = 1.0 - clamp(v, 0.0, 1.0);
+        let mut i: u32 = (_u * self.width() as f64) as u32;
+        let mut j: u32 = (_v * self.height() as f64) as u32;
+
+        if i >= self.width() {
+            i = self.width() - 1;
+        }
+        if j >= self.height() {
+            j = self.height() - 1;
+        }
+
+        const COLOR_SCALE: f64 = 1.0 / 255.0;
+        let pixel = self.data.get_pixel(i, j);
+        let [red, green, blue] = pixel.0;
+        return Color::new(
+            red as f64 * COLOR_SCALE,
+            green as f64 * COLOR_SCALE,
+            blue as f64 * COLOR_SCALE,
+        );
     }
 }

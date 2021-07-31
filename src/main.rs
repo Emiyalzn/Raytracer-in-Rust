@@ -99,7 +99,7 @@ fn main() {
     let samples_per_pixel = 500;
     let max_depth = 50;
 
-    let (world, cam) = init_scene(1);
+    let (world, cam) = init_scene(3);
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
@@ -162,7 +162,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/TwoSpheres.png").unwrap();
+    result.save("output/Earth.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {
