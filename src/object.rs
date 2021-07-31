@@ -1,5 +1,6 @@
 pub use crate::aabb::*;
 pub use crate::ray::Ray;
+pub use crate::texture::*;
 use crate::vec3::random_in_unit_sphere;
 pub use crate::vec3::{Color, Point3, Vec3};
 use rand::Rng;
@@ -17,6 +18,8 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub mat_ptr: Arc<dyn Material>,
     pub t: f64,
+    pub u: f64,
+    pub v: f64,
     pub front_face: bool,
 }
 
@@ -35,6 +38,8 @@ impl HitRecord {
             },
             mat_ptr: m,
             t: tin,
+            u: 0.0,
+            v: 0.0,
             front_face: true,
         }
     }
@@ -46,6 +51,11 @@ impl HitRecord {
         } else {
             -*outward_normal
         };
+    }
+
+    pub fn set_uv(&mut self, res: (f64, f64)) {
+        self.u = res.0;
+        self.v = res.1;
     }
 }
 
@@ -86,6 +96,8 @@ impl Object for Sphere {
                 let outward_normal = (r.at(tmp) - self.center) / self.radius;
                 let mut rec = HitRecord::new(r.at(tmp), n, tmp, self.mat_ptr.clone());
                 rec.set_face_normal(r, &outward_normal);
+                let res = get_sphere_uv(&rec.p);
+                rec.set_uv(res);
                 return Some(rec);
             }
             let tmp = (-half_b + root) / a;
@@ -94,6 +106,8 @@ impl Object for Sphere {
                 let outward_normal = (r.at(tmp) - self.center) / self.radius;
                 let mut rec = HitRecord::new(r.at(tmp), n, tmp, self.mat_ptr.clone());
                 rec.set_face_normal(r, &outward_normal);
+                let res = get_sphere_uv(&rec.p);
+                rec.set_uv(res);
                 return Some(rec);
             }
         }
@@ -107,6 +121,14 @@ impl Object for Sphere {
         );
         Some(output_box)
     }
+}
+
+fn get_sphere_uv(p: &Vec3) -> (f64, f64) {
+    let phi = p.z.atan2(p.x);
+    let theta = p.y.asin();
+    let u = 1.0 - (phi + std::f64::consts::PI) / (2.0 * std::f64::consts::PI);
+    let v = (theta + std::f64::consts::PI / 2.0) / std::f64::consts::PI;
+    (u, v)
 }
 
 #[derive(Clone)]
@@ -174,18 +196,19 @@ pub trait Material: Send + Sync {
 }
 
 pub struct Lambertian {
-    pub albedo: Color,
+    pub albedo: Arc<dyn Texture>,
 }
 
 impl Lambertian {
     pub fn new(a: &Color) -> Self {
+        let tex = SolidColor::new(a);
         Self {
-            albedo: Color {
-                x: a.x,
-                y: a.y,
-                z: a.z,
-            },
+            albedo: Arc::new(tex),
         }
+    }
+
+    pub fn new_arc(a: Arc<dyn Texture>) -> Self {
+        Self { albedo: a }
     }
 }
 
@@ -196,7 +219,7 @@ impl Material for Lambertian {
             scatter_direction = rec.normal;
         }
         let scattered = Ray::new(rec.p, scatter_direction);
-        let attenuation = self.albedo;
+        let attenuation = self.albedo.value(rec.u, rec.v, &rec.p);
         Some((attenuation, scattered))
     }
 }

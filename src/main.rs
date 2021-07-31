@@ -10,6 +10,7 @@ mod object;
 mod ray;
 mod scene;
 mod vec3;
+pub mod texture;
 
 pub use camera::Camera;
 use image::{imageops::FilterType::CatmullRom, ImageBuffer, Rgb, RgbImage};
