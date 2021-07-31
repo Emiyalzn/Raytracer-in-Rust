@@ -9,8 +9,8 @@ mod camera;
 mod object;
 mod ray;
 mod scene;
-mod vec3;
 pub mod texture;
+mod vec3;
 
 pub use camera::Camera;
 use image::{imageops::FilterType::CatmullRom, ImageBuffer, Rgb, RgbImage};
@@ -24,6 +24,8 @@ use std::sync::Arc;
 use threadpool::ThreadPool;
 use vec3::{random_in_unit_sphere, random_unit_vector};
 pub use vec3::{Color, Point3, Vec3};
+
+use crate::scene::init_scene;
 
 const AUTHOR: &str = "Emiyalzn";
 
@@ -96,32 +98,13 @@ fn main() {
     let samples_per_pixel = 500;
     let max_depth = 50;
 
-    // Camera
-    let lookfrom = Point3::new(13.0, 2.0, 3.0);
-    let lookat = Point3::new(0.0, 0.0, 0.0);
-    let vup = Vec3::new(0.0, 1.0, 0.0);
-    let dist_to_focus = 10.0;
-    let aperture = 0.1;
-
-    let cam = Camera::new(
-        20.0,
-        aspect_ratio,
-        lookfrom,
-        lookat,
-        vup,
-        aperture,
-        dist_to_focus,
-    );
+    let (world, cam) = init_scene(2);
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
     let pool = ThreadPool::new(n_workers);
 
     let bar = ProgressBar::new(n_jobs as u64);
-
-    // use Arc to pass one instance of World to multiple threads
-    let world_scene = scene::random_scene();
-    let world = Arc::new(world_scene);
 
     for i in 0..n_jobs {
         let tx = tx.clone();
@@ -178,7 +161,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/FinalScene.png").unwrap();
+    result.save("output/TwoSpheres.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {

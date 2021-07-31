@@ -11,11 +11,83 @@ fn random_double_in(min: f64, max: f64) -> f64 {
     rand::thread_rng().gen_range(min, max)
 }
 
+pub fn init_scene(index: u32) -> (Arc<dyn Object>, Camera) {
+    match index {
+        1 => {
+            let world_scene = two_spheres();
+            let world = Arc::new(world_scene);
+
+            let look_from = Point3::new(13.0,2.0,3.0);
+            let look_at = Point3::new(0.0,0.0,0.0);
+            let vup = Vec3::new(0.0,1.0,0.0);
+            let vfov = 20.0;
+            let aspect_ratio = 3.0/2.0;
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Camera::new(
+                vfov,
+                aspect_ratio,
+                look_from,
+                look_at,
+                vup,
+                aperture,
+                dist_to_focus,
+            );
+
+            (world, cam)
+        }
+        2 => {
+            let world_scene = random_scene();
+            let world = Arc::new(world_scene);
+
+            let look_from = Point3::new(13.0,2.0,3.0);
+            let look_at = Point3::new(0.0,0.0,0.0);
+            let vup = Vec3::new(0.0,1.0,0.0);
+            let vfov = 20.0;
+            let aspect_ratio = 3.0/2.0;
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Camera::new(
+                vfov,
+                aspect_ratio,
+                look_from,
+                look_at,
+                vup,
+                aperture,
+                dist_to_focus,
+            );
+
+            (world, cam)
+        }
+        _ => panic!("index out of bound"),
+    }
+}
+
+pub fn two_spheres() -> HittableList {
+    let mut objects = HittableList::new();
+    let checker = Arc::new(CheckerTexture::new(
+        &Color::new(0.2, 0.3, 0.1),
+        &Color::new(0.9, 0.9, 0.9),
+    ));
+    let _checker = checker.clone();
+    objects.push(Arc::new(Sphere::new(
+        Point3::new(0.0, -10.0, 0.0),
+        10.0,
+        Arc::new(Lambertian::new_arc(checker)),
+    )));
+    objects.push(Arc::new(Sphere::new(
+        Point3::new(0.0, 10.0, 0.0),
+        10.0,
+        Arc::new(Lambertian::new_arc(_checker)),
+    )));
+    objects
+}
+
 pub fn random_scene() -> HittableList {
     let mut world = HittableList::new();
     let checker_texture = Arc::new(CheckerTexture::new(
-        &Color::new(0.2,0.3,0.1),
-        &Color::new(0.9,0.9,0.9),
+        &Color::new(0.2, 0.3, 0.1),
+        &Color::new(0.9, 0.9, 0.9),
     ));
     world.push(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
