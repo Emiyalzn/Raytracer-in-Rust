@@ -13,11 +13,14 @@ fn random_double_in(min: f64, max: f64) -> f64 {
 
 pub fn random_scene() -> HittableList {
     let mut world = HittableList::new();
-    let ground_material = Arc::new(Lambertian::new(&Color::new(0.5, 0.5, 0.5)));
+    let checker_texture = Arc::new(CheckerTexture::new(
+        &Color::new(0.2,0.3,0.1),
+        &Color::new(0.9,0.9,0.9),
+    ));
     world.push(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        ground_material,
+        Arc::new(Lambertian::new_arc(checker_texture)),
     )));
 
     for a in -11..11 {
