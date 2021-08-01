@@ -8,6 +8,7 @@ pub mod aabb;
 pub mod bvh;
 mod camera;
 mod object;
+pub mod perlin;
 mod ray;
 mod scene;
 pub mod texture;
@@ -99,7 +100,7 @@ fn main() {
     let samples_per_pixel = 500;
     let max_depth = 50;
 
-    let (world, cam) = init_scene(3);
+    let (world, cam) = init_scene(4);
 
     // create a channel to send objects between threads
     let (tx, rx) = channel();
@@ -162,7 +163,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Earth.png").unwrap();
+    result.save("output/Perlin.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, depth: i32) -> Color {

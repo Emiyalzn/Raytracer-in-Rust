@@ -1,3 +1,4 @@
+pub use crate::perlin::*;
 use crate::vec3::*;
 pub use image::*;
 pub use std::path::*;
@@ -67,6 +68,30 @@ impl Texture for CheckerTexture {
         } else {
             self.even.value(u, v, p)
         }
+    }
+}
+
+pub struct NoiseTexture {
+    pub noise: Perlin,
+}
+
+impl NoiseTexture {
+    pub fn new() -> Self {
+        Self {
+            noise: Perlin::new(),
+        }
+    }
+}
+
+impl Texture for NoiseTexture {
+    fn value(&self, _u: f64, _v: f64, p: &Vec3) -> Vec3 {
+        return Vec3::ones() * self.noise.noise(p);
+    }
+}
+
+impl Default for NoiseTexture {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

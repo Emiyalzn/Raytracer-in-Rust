@@ -83,8 +83,52 @@ pub fn init_scene(index: u32) -> (Arc<dyn Object>, Camera) {
 
             (world, cam)
         }
+        4 => {
+            let world_scene = two_perlin_spheres();
+            let world = Arc::new(world_scene);
+
+            let look_from = Point3::new(13.0, 2.0, 3.0);
+            let look_at = Point3::new(0.0, 0.0, 0.0);
+            let vup = Vec3::new(0.0, 1.0, 0.0);
+            let vfov = 20.0;
+            let aspect_ratio = 3.0 / 2.0;
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Camera::new(
+                vfov,
+                aspect_ratio,
+                look_from,
+                look_at,
+                vup,
+                aperture,
+                dist_to_focus,
+            );
+
+            (world, cam)
+        }
         _ => panic!("index out of bound"),
     }
+}
+
+pub fn two_perlin_spheres() -> HittableList {
+    let mut world = HittableList::new();
+
+    let pertext = Arc::new(NoiseTexture::new());
+    let perlin_surface = Arc::new(Lambertian::new_arc(pertext));
+    let _perlin_surface = perlin_surface.clone();
+
+    world.push(Arc::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        perlin_surface,
+    )));
+    world.push(Arc::new(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0),
+        2.0,
+        _perlin_surface,
+    )));
+
+    world
 }
 
 pub fn earth() -> HittableList {
