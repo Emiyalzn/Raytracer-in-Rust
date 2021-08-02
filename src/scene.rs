@@ -108,7 +108,7 @@ pub fn init_scene(index: u32) -> (Arc<dyn Object>, Camera) {
         }
         5 => {
             let world_scene = cornell_box();
-            let world = Arc::new(world_scene);
+            let world = BvhNode::new_boxed(world_scene, 0.0, 0.0001);
 
             let look_from = Point3::new(278.0, 278.0, -800.0);
             let look_at = Point3::new(278.0, 278.0, 0.0);
@@ -167,6 +167,16 @@ pub fn cornell_box() -> HittableList {
         0.0,
         555.0,
         555.0,
+        white.clone(),
+    )));
+    world.push(Arc::new(Box::new(
+        &Point3::new(130.0, 0.0, 65.0),
+        &Point3::new(295.0, 165.0, 230.0),
+        white.clone(),
+    )));
+    world.push(Arc::new(Box::new(
+        &Point3::new(265.0, 0.0, 295.0),
+        &Point3::new(430.0, 330.0, 460.0),
         white.clone(),
     )));
 
