@@ -7,3 +7,7 @@ The final Scene of the first book:
 The Earth:
 
 ![Earth](./output/Earth.png)
+
+The Standard Cornell Box:
+
+![Cornell Box](./output/Cornell Box.png)
