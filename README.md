@@ -10,4 +10,4 @@ The Earth:
 
 The Standard Cornell Box:
 
-![Cornell Box](./output/Cornell Box.png)
+![Cornell Box](./output/CornellBox.png)
