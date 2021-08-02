@@ -169,16 +169,25 @@ pub fn cornell_box() -> HittableList {
         555.0,
         white.clone(),
     )));
-    world.push(Arc::new(Box::new(
-        &Point3::new(130.0, 0.0, 65.0),
-        &Point3::new(295.0, 165.0, 230.0),
+
+    let box1 = Arc::new(Box::new(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 330.0, 165.0),
         white.clone(),
-    )));
-    world.push(Arc::new(Box::new(
-        &Point3::new(265.0, 0.0, 295.0),
-        &Point3::new(430.0, 330.0, 460.0),
+    ));
+    let _box1 = Arc::new(RotateY::new(box1, 15.0));
+    let _box1_ = Arc::new(Translate::new(_box1, &Vec3::new(265.0, 0.0, 295.0)));
+
+    let box2 = Arc::new(Box::new(
+        &Point3::new(0.0, 0.0, 0.0),
+        &Point3::new(165.0, 165.0, 165.0),
         white.clone(),
-    )));
+    ));
+    let _box2 = Arc::new(RotateY::new(box2, -18.0));
+    let _box2_ = Arc::new(Translate::new(_box2, &Vec3::new(130.0, 0.0, 65.0)));
+
+    world.push(_box1_);
+    world.push(_box2_);
 
     world
 }

@@ -1,8 +1,8 @@
 pub use crate::aabb::*;
 pub use crate::ray::Ray;
 pub use crate::texture::*;
-use crate::vec3::random_in_unit_sphere;
 pub use crate::vec3::{Color, Point3, Vec3};
+use crate::{camera::degrees_to_radians, vec3::random_in_unit_sphere};
 use rand::Rng;
 pub use std::{sync::Arc, vec};
 
@@ -361,6 +361,150 @@ impl Object for Box {
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
         let output_box = AABB::new(self.box_min, self.box_max);
         Some(output_box)
+    }
+}
+
+pub struct Translate {
+    ptr: Arc<dyn Object>,
+    offset: Vec3,
+}
+
+impl Translate {
+    pub fn new(p: Arc<dyn Object>, displacement: &Vec3) -> Self {
+        Self {
+            ptr: p,
+            offset: *displacement,
+        }
+    }
+}
+
+impl Object for Translate {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let moved_r = Ray::new(r.orig - self.offset, r.dir);
+        match self.ptr.hit(&moved_r, t_min, t_max) {
+            None => None,
+            Some(mut rec) => {
+                rec.p += self.offset;
+                let normal = rec.normal;
+                rec.set_face_normal(&moved_r, &normal);
+                Some(rec)
+            }
+        }
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        match self.ptr.bounding_box(t0, t1) {
+            None => None,
+            Some(output_box) => {
+                let new_box = AABB::new(
+                    output_box.min_p + self.offset,
+                    output_box.max_p + self.offset,
+                );
+                Some(new_box)
+            }
+        }
+    }
+}
+
+pub struct RotateY {
+    ptr: Arc<dyn Object>,
+    sin_theta: f64,
+    cos_theta: f64,
+    hasbox: bool,
+    bbox: AABB,
+}
+
+impl RotateY {
+    pub fn new(p: Arc<dyn Object>, angle: f64) -> Self {
+        let radians = degrees_to_radians(angle);
+        let sine = radians.sin();
+        let cosine = radians.cos();
+
+        let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
+        let mut max = Point3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+
+        match p.bounding_box(0.0, 1.0) {
+            None => Self {
+                ptr: p,
+                sin_theta: sine,
+                cos_theta: cosine,
+                hasbox: false,
+                bbox: AABB::new(min, max),
+            },
+            Some(bound_box) => {
+                for i in 0..2 {
+                    for j in 0..2 {
+                        for k in 0..2 {
+                            let x =
+                                i as f64 * bound_box.max_p.x + (1 - i) as f64 * bound_box.min_p.x;
+                            let y =
+                                j as f64 * bound_box.max_p.y + (1 - j) as f64 * bound_box.min_p.y;
+                            let z =
+                                k as f64 * bound_box.max_p.z + (1 - k) as f64 * bound_box.min_p.z;
+
+                            let newx = cosine * x + sine * z;
+                            let newz = -sine * x + cosine * z;
+
+                            let tester = Vec3::new(newx, y, newz);
+
+                            min.x = min.x.min(tester.x);
+                            max.x = max.x.max(tester.x);
+                            min.y = min.y.min(tester.y);
+                            max.y = max.y.max(tester.y);
+                            min.z = min.z.min(tester.z);
+                            max.z = max.z.max(tester.z);
+                        }
+                    }
+                }
+                Self {
+                    ptr: p,
+                    sin_theta: sine,
+                    cos_theta: cosine,
+                    hasbox: true,
+                    bbox: AABB::new(min, max),
+                }
+            }
+        }
+    }
+}
+
+impl Object for RotateY {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let mut orig = r.orig;
+        let mut direction = r.dir;
+
+        orig.x = self.cos_theta * r.orig.x - self.sin_theta * r.orig.z;
+        orig.z = self.sin_theta * r.orig.x + self.cos_theta * r.orig.z;
+
+        direction.x = self.cos_theta * r.dir.x - self.sin_theta * r.dir.z;
+        direction.z = self.sin_theta * r.dir.x + self.cos_theta * r.dir.z;
+
+        let rotated_r = Ray::new(orig, direction);
+
+        match self.ptr.hit(&rotated_r, t_min, t_max) {
+            None => None,
+            Some(mut rec) => {
+                let mut p = rec.p;
+                let mut normal = rec.normal;
+
+                p.x = self.cos_theta * rec.p.x + self.sin_theta * rec.p.z;
+                p.z = -self.sin_theta * rec.p.x + self.cos_theta * rec.p.z;
+
+                normal.x = self.cos_theta * rec.normal.x + self.sin_theta * rec.normal.z;
+                normal.z = -self.sin_theta * rec.normal.x + self.cos_theta * rec.normal.z;
+
+                rec.p = p;
+                rec.set_face_normal(&rotated_r, &normal);
+                Some(rec)
+            }
+        }
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        match self.hasbox {
+            false => None,
+            true => Some(self.bbox),
+        }
     }
 }
 
