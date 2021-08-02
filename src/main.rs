@@ -94,13 +94,13 @@ fn main() {
     );
 
     // Image
-    let aspect_ratio = 1.0;
-    let image_width = 600;
+    let aspect_ratio = 3.0 / 2.0;
+    let image_width = 1200;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel = 200;
-    let max_depth = 50;
+    let samples_per_pixel = 500;
+    let max_depth = 100;
 
-    let (world, cam) = init_scene(5);
+    let (world, cam) = init_scene(2);
     let background = Color::new(0.0, 0.0, 0.0);
 
     // create a channel to send objects between threads
@@ -164,7 +164,7 @@ fn main() {
 
     render_text(&mut result, msg.as_str());
 
-    result.save("output/Cornell Box.png").unwrap();
+    result.save("output/LightFinalScene.png").unwrap();
 }
 
 fn ray_color(r: &Ray, world: &dyn Object, background: &Color, depth: i32) -> Color {
